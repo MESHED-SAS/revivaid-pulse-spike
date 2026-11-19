@@ -35,7 +35,7 @@ $('nav').addEventListener('click',e=>{ const b=e.target.closest('button'); if(!b
 // ===== 1. Environnement, persistance =====
 async function env(){
   const standalone = matchMedia('(display-mode: standalone)').matches || navigator.standalone===true;
-  const sw = 'serviceWorker' in navigator ? ((await navigator.serviceWorker.getRegistration())?'actif':'non enregistré') : 'absent';
+  const sw = 'serviceWorker' in navigator ? ((await navigator.serviceWorker.getRegistration())?'actif':(swErr?'ERREUR : '+swErr:'non enregistré')) : 'absent';
   let persisted='?', est={};
   try{ persisted = await navigator.storage.persisted(); est = await navigator.storage.estimate(); }catch(e){}
   R.device = { ua:navigator.userAgent, standalone, sw, persisted, quota:est.quota, usage:est.usage, barcodeDetector:'BarcodeDetector' in window, webauthn:!!window.PublicKeyCredential, subtle:!!(crypto&&crypto.subtle), online:navigator.onLine };
@@ -50,7 +50,10 @@ async function env(){
 }
 $('btnEnv').onclick=env;
 $('btnPersist').onclick=async()=>{ try{ const ok=await navigator.storage.persist(); rec('persistance',{demandePersist:ok}); }catch(e){} env(); };
-if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(e=>console.warn(e));
+let swErr='';
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').then(()=>navigator.serviceWorker.ready).then(()=>env()).catch(e=>{ swErr=e.name+' '+e.message; env(); });
+}
 env();
 
 // ===== 1. Caméra et QR =====
