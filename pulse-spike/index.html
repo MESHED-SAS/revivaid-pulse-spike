@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Pulse Spike J0</title>
+<link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="style.css">
+<meta name="theme-color" content="#1B2A44"><link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes">
+</head><body>
+<header><h1>Pulse Spike J0</h1><small>Application de test : aucune donnée réelle, aucune donnée de patient</small></header>
+<nav id="nav">
+<button data-t="t1" class="on">1 Install QR</button><button data-t="t2">2 Photos</button><button data-t="t3">3 Envoi</button><button data-t="t4">4 Accès Impr.</button><button data-t="t5">Relevé</button>
+</nav>
+
+<section id="t1" class="on">
+<div class="card"><h2>Environnement</h2><div class="kv" id="env"></div>
+<button class="a" id="btnPersist">Demander le stockage persistant</button><button class="a" id="btnEnv">Rafraîchir</button></div>
+<div class="card"><h2>Persistance : données déjà présentes</h2><div class="kv" id="persist"></div>
+<small>À relire après plusieurs jours sans ouvrir l'application (test 1 du plan).</small></div>
+<div class="card"><h2>Lecture de QR par la caméra</h2>
+<video id="vid" playsinline muted></video><canvas id="cv" class="hid"></canvas>
+<div><button class="a" id="btnCam">Démarrer la caméra</button><button class="a" id="btnStop" disabled>Arrêter</button></div>
+<div class="kv" id="scanStat"></div><pre class="log" id="logScan"></pre></div>
+<div class="card"><h2>QR de test à scanner (autre écran ou papier)</h2>
+<label>Taille d'un module (px) <input type="number" id="qrCell" value="4" min="1" max="12"></label>
+<button class="a" id="btnQr">Générer un QR (UUID)</button><div id="qrOut"></div></div>
+</section>
+
+<section id="t2">
+<div class="card"><h2>Photo réelle (caméra ou galerie)</h2>
+<input type="file" id="file" accept="image/*" capture="environment"><div class="kv" id="photoOne"></div></div>
+<div class="card"><h2>Lot synthétique</h2>
+<label>Nombre de photos <input type="number" id="nPh" value="100" min="1" max="2000"></label>
+<button class="a" id="btnGen">Générer, compresser, chiffrer, stocker</button>
+<button class="a" id="btnVerify">Déchiffrer et vérifier tout</button><button class="a" id="btnClr">Vider les photos</button>
+<div class="kv" id="phStat"></div><pre class="log" id="logPh"></pre></div>
+</section>
+
+<section id="t3">
+<div class="card"><h2>Créer des fiches avec photo (écriture atomique fiche + photo + file d'envoi)</h2>
+<label>Nombre de fiches <input type="number" id="nFi" value="10" min="1" max="500"></label>
+<button class="a" id="btnFi">Créer hors ligne</button></div>
+<div class="card"><h2>Envoi</h2>
+<label>Mode <select id="mode"><option value="sim">Serveur simulé (idempotent)</option><option value="real">URL réelle (POST JSON)</option></select></label>
+<label>URL (mode réel) <input type="text" id="url" placeholder="https://…"></label>
+<label>Délai par envoi (ms) <input type="number" id="delay" value="400"></label>
+<label>Coupure simulée après N envois (0 = jamais) <input type="number" id="cut" value="0"></label>
+<button class="a" id="btnSync">Envoyer maintenant</button><button class="a" id="btnCheck">Contrôle d'intégrité</button><button class="a" id="btnRst">Tout effacer</button>
+<div class="kv" id="obStat"></div><pre class="log" id="logOb"></pre></div>
+</section>
+
+<section id="t4">
+<div class="card"><h2>Biométrie (WebAuthn)</h2><div class="kv" id="waInfo"></div>
+<button class="a" id="btnWaC">Créer un identifiant</button><button class="a" id="btnWaG">Déverrouiller</button><pre class="log" id="logWa"></pre></div>
+<div class="card"><h2>Étiquette (62 × 29 mm)</h2>
+<label>Numéro affiché <input type="text" id="num" value="PLS-K7M2-0042"></label>
+<button class="a" id="btnPrint">Imprimer l'étiquette</button><div class="lbl" id="lbl"></div><div id="lblPrev"></div>
+<small>Test 6 : imprimer sans réseau internet, puis scanner l'étiquette imprimée avec l'onglet 1.</small></div>
+</section>
+
+<section id="t5">
+<div class="card"><h2>Relevé des mesures</h2><textarea id="rel" rows="14" style="width:100%;font:12px monospace"></textarea>
+<button class="a" id="btnRel">Actualiser</button><button class="a" id="btnCopy">Copier</button></div>
+</section>
+<script src="lib/jsQR.js"></script><script src="lib/qrcode.js"></script><script src="app.js"></script>
+</body></html>
