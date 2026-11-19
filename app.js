@@ -62,23 +62,30 @@ $('btnCam').onclick=async()=>{
   try{
     stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
     const v=$('vid'); v.srcObject=stream; await v.play(); $('btnCam').disabled=true; $('btnStop').disabled=false;
-    scanning=true; loopScan(now());
+    scanning=true; loopScan();
   }catch(e){ log('logScan','Erreur caméra : '+e.name+' '+e.message); rec('qr',{erreurCamera:e.name}); }
 };
 $('btnStop').onclick=()=>{ scanning=false; if(stream) stream.getTracks().forEach(t=>t.stop()); $('btnCam').disabled=false; $('btnStop').disabled=true; };
 let bd=null; if('BarcodeDetector' in window){ try{ bd=new BarcodeDetector({formats:['qr_code']}); }catch(e){} }
-const reads=[]; let last='', lastAt=0;
-async function loopScan(t0){
-  const v=$('vid'), c=$('cv'), ctx=c.getContext('2d',{willReadFrequently:true}); let tStart=t0, frames=0;
+const reads=[]; let first=null;
+async function loopScan(){
+  const v=$('vid'), c=$('cv'), ctx=c.getContext('2d',{willReadFrequently:true});
+  let frames=0, tFirst=null, tAbs=null, present=false, miss=0; const dets=[]; first=null; reads.length=0;
   while(scanning){
-    if(v.readyState>=2){
+    if(v.readyState>=2 && v.videoWidth){
+      if(tFirst===null){ tFirst=now(); tAbs=tFirst; }
       const w=Math.min(640,v.videoWidth), h=Math.round(v.videoHeight*w/v.videoWidth); c.width=w; c.height=h; ctx.drawImage(v,0,0,w,h); frames++;
-      let txt=null, how='';
+      let txt=null, how=''; const td=now();
       try{ if(bd){ const r=await bd.detect(c); if(r.length){ txt=r[0].rawValue; how='BarcodeDetector'; } }
         if(!txt){ const img=ctx.getImageData(0,0,w,h); const q=jsQR(img.data,w,h,{inversionAttempts:'dontInvert'}); if(q){ txt=q.data; how='jsQR'; } } }catch(e){}
-      if(txt && (txt!==last || now()-lastAt>3000)){ const ms=now()-tStart; last=txt; lastAt=now(); reads.push(ms);
-        log('logScan',`QR lu en ${ms.toFixed(0)} ms (${how}) : ${txt.slice(0,40)}`); rec('qr',{lectures:reads.length,delai:stats(reads),decodeur:how}); tStart=now(); }
-      kv('scanStat',[['Images analysées',frames],['Lectures',reads.length],['Délai moyen (ms)',stats(reads).moy||'-'],['Cible','< 2000 ms']]);
+      dets.push(now()-td); if(dets.length>300) dets.shift();
+      if(txt){ miss=0;
+        if(!present){ present=true; const ms=Math.round(now()-tAbs);
+          if(first===null){ first=ms; log('logScan',`1re lecture : ${ms} ms après la 1re image de la caméra (mise au point incluse) (${how}) : ${txt.slice(0,40)}`); }
+          else { reads.push(ms); log('logScan',`Relecture : ${ms} ms après réapparition du QR (${how}) : ${txt.slice(0,40)}`); }
+          rec('qr',{premiere_lecture_ms:first,relectures:stats(reads),detection_par_image:stats(dets),decodeur:how}); }
+      } else { miss++; if(!present || miss>=5){ present=false; tAbs=now(); } }
+      kv('scanStat',[['Images analysées',frames],['Cadence d\'analyse (images/s)',(frames/Math.max(.001,(now()-tFirst)/1000)).toFixed(1)],['Temps de détection par image (ms)',stats(dets).moy||'-'],['1re lecture (ms, mise au point incluse)',first===null?'-':first],['Relectures : moyenne (ms)',stats(reads).moy||'-'],['Cible','< 2000 ms']]);
     }
     await new Promise(r=>setTimeout(r,60));
   }
